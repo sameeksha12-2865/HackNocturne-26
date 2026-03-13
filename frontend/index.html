@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sandbox — Product Impact Analysis</title>
+    <meta name="description" content="Simulate product decisions before deployment. Pre-deployment impact forecasting with LLM-driven behavioral modeling.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2035;
+            --bg-card-hover: #1e2845;
+            --border: #2a3555;
+            --text-primary: #f0f4ff;
+            --text-secondary: #8b9dc3;
+            --text-muted: #5a6d8a;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+            --accent-pink: #ec4899;
+            --glow-blue: rgba(59, 130, 246, 0.15);
+            --glow-purple: rgba(139, 92, 246, 0.15);
+            --gradient-primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --gradient-danger: linear-gradient(135deg, #ef4444, #ec4899);
+            --gradient-success: linear-gradient(135deg, #10b981, #06b6d4);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Animated Background ────────────────────────── */
+        .bg-grid {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, var(--glow-blue) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, var(--glow-purple) 0%, transparent 50%),
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+            pointer-events: none; z-index: 0;
+            animation: gridPulse 8s ease-in-out infinite alternate;
+        }
+        @keyframes gridPulse {
+            0% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* ── Layout ─────────────────────────────────────── */
+        .app { position: relative; z-index: 1; }
+
+        header {
+            padding: 20px 32px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            background: rgba(10, 14, 26, 0.8);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .logo {
+            display: flex; align-items: center; gap: 14px;
+        }
+        .logo-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            background: var(--gradient-primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 800; color: white;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+        .logo h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+        .logo span { color: var(--accent-blue); }
+
+        .header-status {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.3); }
+        }
+        .status-text { font-size: 13px; color: var(--text-secondary); }
+
+        .main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
+
+        /* ── Input Panel ────────────────────────────────── */
+        .input-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 28px;
+            transition: var(--transition);
+        }
+        .input-panel:hover { border-color: var(--accent-blue); box-shadow: 0 0 40px var(--glow-blue); }
+
+        .input-panel h2 {
+            font-size: 16px; font-weight: 600; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .input-panel p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+
+        .input-row { display: flex; gap: 12px; align-items: flex-end; }
+
+        textarea#featureInput {
+            flex: 1; background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 14px 16px; color: var(--text-primary);
+            font-family: 'Inter', sans-serif; font-size: 14px; resize: vertical;
+            min-height: 56px; max-height: 160px; transition: var(--transition);
+        }
+        textarea#featureInput:focus {
+            outline: none; border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        textarea#featureInput::placeholder { color: var(--text-muted); }
+
+        .btn-simulate {
+            background: var(--gradient-primary); border: none;
+            border-radius: var(--radius-sm); padding: 14px 28px;
+            color: white; font-weight: 600; font-size: 14px;
+            cursor: pointer; transition: var(--transition);
+            white-space: nowrap; letter-spacing: 0.3px;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
+        }
+        .btn-simulate:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4); }
+        .btn-simulate:active { transform: translateY(0); }
+        .btn-simulate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .btn-simulate.loading {
+            position: relative; color: transparent;
+        }
+        .btn-simulate.loading::after {
+            content: ''; position: absolute;
+            width: 20px; height: 20px;
+            border: 2px solid transparent; border-top-color: white;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            top: 50%; left: 50%; margin: -10px 0 0 -10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .quick-examples {
+            margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .example-chip {
+            background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 20px; padding: 6px 14px; font-size: 12px;
+            color: var(--accent-blue); cursor: pointer; transition: var(--transition);
+        }
+        .example-chip:hover { background: rgba(59, 130, 246, 0.2); transform: scale(1.03); }
+
+        /* ── Dashboard Grid ─────────────────────────────── */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+        .dashboard.hidden { display: none; }
+
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px;
+            transition: var(--transition); position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--gradient-primary); opacity: 0; transition: var(--transition);
+        }
+        .card:hover { border-color: var(--accent-blue); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+        .card:hover::before { opacity: 1; }
+        .card.full-width { grid-column: 1 / -1; }
+
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .card-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .card-badge {
+            font-size: 11px; padding: 3px 10px; border-radius: 12px;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .badge-danger { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .badge-success { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .badge-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+        .badge-info { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+
+        /* ── Segment Impact Grid (Heatmap) ──────────────── */
+        .heatmap-table {
+            width: 100%; border-collapse: separate; border-spacing: 4px;
+        }
+        .heatmap-table th {
+            font-size: 11px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.8px; padding: 8px 12px;
+            text-align: center;
+        }
+        .heatmap-table th:first-child { text-align: left; }
+        .heatmap-table td {
+            padding: 12px 14px; border-radius: 8px;
+            text-align: center; font-weight: 600; font-size: 14px;
+            transition: var(--transition); cursor: default;
+        }
+        .heatmap-table td:first-child {
+            text-align: left; font-weight: 500; font-size: 13px;
+            background: transparent !important; color: var(--text-primary);
+        }
+        .heatmap-table tr:hover td { transform: scale(1.02); }
+
+        .cell-negative-strong { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+        .cell-negative { background: rgba(239, 68, 68, 0.12); color: #fca5a5; }
+        .cell-neutral { background: rgba(148, 163, 184, 0.1); color: var(--text-secondary); }
+        .cell-positive { background: rgba(16, 185, 129, 0.12); color: #6ee7b7; }
+        .cell-positive-strong { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; }
+
+        /* ── Gini Indicator ─────────────────────────────── */
+        .gini-container { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+        .gini-gauge {
+            flex: 1; min-width: 200px;
+        }
+        .gini-bar-track {
+            height: 14px; background: var(--bg-secondary); border-radius: 7px;
+            overflow: hidden; position: relative; margin-top: 8px;
+        }
+        .gini-bar-fill {
+            height: 100%; border-radius: 7px; transition: width 1s ease;
+        }
+        .gini-bar-threshold {
+            position: absolute; top: -4px; bottom: -4px; width: 2px;
+            background: var(--accent-orange); left: 30%;
+        }
+        .gini-value { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+        .gini-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .gini-verdict {
+            font-size: 14px; font-weight: 600; margin-top: 10px; padding: 8px 16px;
+            border-radius: 10px;
+        }
+
+        /* ── Summary Stats ──────────────────────────────── */
+        .stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+        .stat-card {
+            flex: 1; min-width: 140px; background: var(--bg-secondary);
+            border-radius: var(--radius-sm); padding: 16px; text-align: center;
+            border: 1px solid transparent; transition: var(--transition);
+        }
+        .stat-card:hover { border-color: var(--accent-blue); }
+        .stat-value { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+        .stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* ── Charts ─────────────────────────────────────── */
+        .chart-container { position: relative; height: 300px; margin-top: 12px; }
+
+        /* ── Feature Signal Card ────────────────────────── */
+        .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .signal-item {
+            background: var(--bg-secondary); border-radius: var(--radius-sm);
+            padding: 12px 16px;
+        }
+        .signal-item-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .signal-item-value { font-size: 14px; font-weight: 600; margin-top: 4px; }
+
+        /* ── Requestly Panel ────────────────────────────── */
+        .requestly-panel {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.08));
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            border-radius: var(--radius); padding: 24px; margin-bottom: 28px;
+        }
+        .requestly-panel h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .requestly-panel p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+        .requestly-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+        .requestly-feature {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-sm); padding: 14px;
+            transition: var(--transition);
+        }
+        .requestly-feature:hover { background: rgba(255,255,255,0.06); border-color: var(--accent-purple); }
+        .requestly-feature-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .requestly-feature-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        .requestly-status {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; padding: 4px 12px; border-radius: 12px;
+            background: rgba(16, 185, 129, 0.1); color: var(--accent-green);
+        }
+
+        /* ── Request Log Panel ──────────────────────────── */
+        .request-log {
+            max-height: 250px; overflow-y: auto; font-size: 12px;
+            background: var(--bg-secondary); border-radius: var(--radius-sm);
+            padding: 12px; margin-top: 12px;
+        }
+        .request-log-entry {
+            display: flex; gap: 12px; padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            align-items: center;
+        }
+        .request-log-entry:last-child { border: none; }
+        .log-method {
+            font-weight: 700; font-size: 10px; padding: 2px 8px;
+            border-radius: 4px; min-width: 40px; text-align: center;
+        }
+        .log-get { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .log-post { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+        .log-path { color: var(--text-secondary); flex: 1; }
+        .log-time { color: var(--text-muted); }
+        .log-status { font-weight: 600; }
+        .log-status.ok { color: var(--accent-green); }
+        .log-status.err { color: var(--accent-red); }
+
+        /* ── Placeholder ────────────────────────────────── */
+        .placeholder {
+            text-align: center; padding: 60px 20px;
+            border: 2px dashed var(--border); border-radius: var(--radius);
+            margin: 28px 0;
+        }
+        .placeholder-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+        .placeholder h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .placeholder p { font-size: 14px; color: var(--text-secondary); max-width: 500px; margin: 0 auto; }
+
+        /* ── Animations ─────────────────────────────────── */
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Responsive ─────────────────────────────────── */
+        @media (max-width: 1024px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .main { padding: 16px; }
+            header { padding: 16px; }
+        }
+
+        /* ── Scrollbar ──────────────────────────────────── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+
+    <div class="app">
+        <!-- ── Header ────────────────────────────────────── -->
+        <header>
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <h1>AI <span>Sandbox</span></h1>
+            </div>
+            <div class="header-status">
+                <div class="status-dot"></div>
+                <span class="status-text" id="statusText">2,000 users loaded</span>
+            </div>
+        </header>
+
+        <div class="main">
+            <!-- ── Feature Input Panel ───────────────────── -->
+            <div class="input-panel" id="inputPanel">
+                <h2>🧪 Simulate Product Change</h2>
+                <p>Describe a product decision in plain English. The AI pipeline will predict its impact across all user segments.</p>
+                <div class="input-row">
+                    <textarea id="featureInput" rows="2"
+                        placeholder="e.g. Increase premium subscription price by 15% and remove free tier export feature"></textarea>
+                    <button class="btn-simulate" id="btnSimulate" onclick="runSimulation()">
+                        ▶ Simulate
+                    </button>
+                </div>
+                <div class="quick-examples">
+                    <span class="example-chip" onclick="setExample('Increase premium subscription price by 15% and remove the free tier export feature')">💰 Price Increase</span>
+                    <span class="example-chip" onclick="setExample('Adding AI-powered search for all subscription tiers')">🔍 AI Search</span>
+                    <span class="example-chip" onclick="setExample('Redesigning the dashboard UI with a new modern dark theme')">🎨 UI Redesign</span>
+                    <span class="example-chip" onclick="setExample('Removing the legacy API and migrating all users to the new REST API')">🔧 API Migration</span>
+                    <span class="example-chip" onclick="setExample('Introducing mandatory two-factor authentication for all users')">🔒 2FA Policy</span>
+                </div>
+            </div>
+
+            <!-- ── Summary Stats ─────────────────────────── -->
+            <div class="stats-row hidden" id="summaryStats">
+                <div class="stat-card">
+                    <div class="stat-value" id="statUsers" style="color: var(--accent-cyan);">—</div>
+                    <div class="stat-label">Users Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statChurnRate" style="color: var(--accent-red);">—</div>
+                    <div class="stat-label">Overall Churn Risk</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statEngDelta" style="color: var(--accent-orange);">—</div>
+                    <div class="stat-label">Avg Engagement Δ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statSatDelta" style="color: var(--accent-pink);">—</div>
+                    <div class="stat-label">Avg Satisfaction Δ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statGini" style="color: var(--accent-purple);">—</div>
+                    <div class="stat-label">Gini Index</div>
+                </div>
+            </div>
+
+            <!-- ── Placeholder ───────────────────────────── -->
+            <div class="placeholder" id="placeholder">
+                <div class="placeholder-icon">🚀</div>
+                <h3>Ready to Simulate</h3>
+                <p>Enter a product change above and click Simulate. The AI pipeline will generate segment-level impact forecasts, churn predictions, and inequality indicators.</p>
+            </div>
+
+            <!-- ── Dashboard Grid ────────────────────────── -->
+            <div class="dashboard hidden" id="dashboard">
+                <!-- Segment Impact Heatmap -->
+                <div class="card full-width slide-up" style="animation-delay: 0.1s">
+                    <div class="card-header">
+                        <span class="card-title">📊 Segment Impact Grid</span>
+                        <span class="card-badge badge-info" id="modeBadge">Rule-Based</span>
+                    </div>
+                    <table class="heatmap-table" id="heatmapTable">
+                        <thead>
+                            <tr>
+                                <th>Segment</th>
+                                <th>Engagement Δ</th>
+                                <th>Churn Risk Δ</th>
+                                <th>Satisfaction Δ</th>
+                                <th>Will Churn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="heatmapBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Churn Funnel -->
+                <div class="card slide-up" style="animation-delay: 0.2s">
+                    <div class="card-header">
+                        <span class="card-title">📉 Churn Risk by Segment</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="churnChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gini Inequality -->
+                <div class="card slide-up" style="animation-delay: 0.3s">
+                    <div class="card-header">
+                        <span class="card-title">⚖️ Inequality Indicator</span>
+                    </div>
+                    <div class="gini-container">
+                        <div class="gini-gauge" style="flex: 2;">
+                            <div class="gini-label">Satisfaction Gini Coefficient</div>
+                            <div class="gini-bar-track">
+                                <div class="gini-bar-fill" id="giniFill" style="width: 0%"></div>
+                                <div class="gini-bar-threshold"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                                <span style="font-size: 10px; color: var(--text-muted);">Equal (0)</span>
+                                <span style="font-size: 10px; color: var(--accent-orange);">Threshold (0.3)</span>
+                                <span style="font-size: 10px; color: var(--text-muted);">Unequal (1)</span>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="gini-value" id="giniValue">—</div>
+                            <div class="gini-verdict" id="giniVerdict"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Projection -->
+                <div class="card full-width slide-up" style="animation-delay: 0.4s">
+                    <div class="card-header">
+                        <span class="card-title">📈 4-Week Impact Projection</span>
+                        <span class="card-badge badge-warning">Compounding</span>
+                    </div>
+                    <div class="chart-container" style="height: 320px;">
+                        <canvas id="projectionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Feature Signal -->
+                <div class="card slide-up" style="animation-delay: 0.5s">
+                    <div class="card-header">
+                        <span class="card-title">🔍 Interpreted Feature Signal</span>
+                    </div>
+                    <div class="signal-grid" id="signalGrid"></div>
+                </div>
+
+                <!-- Engagement Delta Chart -->
+                <div class="card slide-up" style="animation-delay: 0.6s">
+                    <div class="card-header">
+                        <span class="card-title">💡 Engagement & Satisfaction Delta</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="deltaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Requestly Integration Panel ───────────── -->
+            <div class="requestly-panel" id="requestlyPanel">
+                <h3>🔗 Requestly Integration Hub</h3>
+                <p>This API is fully instrumented for Requestly testing and monitoring. Every request gets a unique trace ID, timing headers, and mock support.</p>
+                <div class="requestly-features">
+                    <div class="requestly-feature">
+                        <div class="requestly-feature-title">🆔 Request Tracing</div>
+                        <div class="requestly-feature-desc">Every request gets <code>X-Request-Id</code> and <code>X-Processing-Time-Ms</code> headers for full traceability in Requestly.</div>
+                    </div>
+                    <div class="requestly-feature">
+                        <div class="requestly-feature-title">🎭 Mock Mode</div>
+                        <div class="requestly-feature-desc">Add <code>X-Requestly-Mock: true</code> header to get pre-computed results. Perfect for when LLM API credits run low.</div>
+                    </div>
+                    <div class="requestly-feature">
+                        <div class="requestly-feature-title">📦 Auto API Collection</div>
+                        <div class="requestly-feature-desc"><code>GET /api/requestly-collection</code> returns a ready-to-import API collection with all endpoints and test scripts.</div>
+                    </div>
+                    <div class="requestly-feature">
+                        <div class="requestly-feature-title">📋 Request Log</div>
+                        <div class="requestly-feature-desc"><code>GET /api/request-log</code> shows all API traffic — use alongside Requestly for end-to-end debugging.</div>
+                    </div>
+                    <div class="requestly-feature">
+                        <div class="requestly-feature-title">🛡️ Schema Validation</div>
+                        <div class="requestly-feature-desc">API collection includes post-response test scripts that validate every response matches the expected schema.</div>
+                    </div>
+                    <div class="requestly-feature">
+                        <div class="requestly-feature-title">🔄 Env Switching</div>
+                        <div class="requestly-feature-desc">Uses <code>{{BASE_URL}}</code> variable — switch between localhost and deployed URL in one click via Requestly.</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px; display: flex; gap: 12px; align-items: center;">
+                    <button class="btn-simulate" style="padding: 10px 20px; font-size: 13px;" onclick="fetchRequestLog()">
+                        📋 View API Log
+                    </button>
+                    <button class="btn-simulate" style="padding: 10px 20px; font-size: 13px; background: linear-gradient(135deg, #8b5cf6, #ec4899);" onclick="downloadRequestlyCollection()">
+                        📦 Download Collection
+                    </button>
+                    <span class="requestly-status" id="requestlyStatus">
+                        <span class="status-dot" style="width: 6px; height: 6px;"></span>
+                        API Instrumented
+                    </span>
+                </div>
+
+                <div class="request-log hidden" id="requestLog"></div>
+            </div>
+
+        </div><!-- .main -->
+    </div><!-- .app -->
+
+    <script>
+        // ── Configuration ──────────────────────────────
+        const API_BASE = window.location.origin;
+        let churnChartInstance = null;
+        let projectionChartInstance = null;
+        let deltaChartInstance = null;
+        let currentResults = null;
+
+        // ── Quick Examples ─────────────────────────────
+        function setExample(text) {
+            const el = document.getElementById('featureInput');
+            el.value = text;
+            el.focus();
+            el.style.borderColor = 'var(--accent-blue)';
+            setTimeout(() => el.style.borderColor = '', 500);
+        }
+
+        // ── Simulation ────────────────────────────────
+        async function runSimulation() {
+            const input = document.getElementById('featureInput').value.trim();
+            if (!input) return;
+
+            const btn = document.getElementById('btnSimulate');
+            btn.disabled = true;
+            btn.classList.add('loading');
+            document.getElementById('statusText').textContent = '⏳ Running simulation pipeline...';
+
+            try {
+                const resp = await fetch(`${API_BASE}/simulate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ description: input, use_llm: false }),
+                });
+
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+                const data = await resp.json();
+                currentResults = data;
+
+                // Show request tracing info from Requestly headers
+                const requestId = resp.headers.get('X-Request-Id');
+                const processingTime = resp.headers.get('X-Processing-Time-Ms');
+                console.log(`[Requestly Trace] Request ID: ${requestId}, Processing: ${processingTime}ms`);
+
+                renderResults(data);
+                document.getElementById('statusText').textContent =
+                    `✅ Simulation complete — ${data.population_size} users analyzed (${processingTime}ms)`;
+
+            } catch (err) {
+                console.error('Simulation error:', err);
+                document.getElementById('statusText').textContent = `❌ Error: ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+            }
+        }
+
+        // ── Render Results ────────────────────────────
+        function renderResults(data) {
+            document.getElementById('placeholder').style.display = 'none';
+            document.getElementById('summaryStats').classList.remove('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+
+            // Summary stats
+            const summary = data.predictions_summary;
+            document.getElementById('statUsers').textContent = summary.total_users.toLocaleString();
+            document.getElementById('statChurnRate').textContent = summary.overall_churn_rate + '%';
+            document.getElementById('statEngDelta').textContent = (summary.avg_engagement_delta >= 0 ? '+' : '') + summary.avg_engagement_delta;
+            document.getElementById('statSatDelta').textContent = (summary.avg_satisfaction_delta >= 0 ? '+' : '') + summary.avg_satisfaction_delta;
+            document.getElementById('statGini').textContent = data.gini_satisfaction.toFixed(2);
+
+            // Mode badge
+            const modeBadge = document.getElementById('modeBadge');
+            modeBadge.textContent = data.simulation_mode.toUpperCase();
+            modeBadge.className = 'card-badge ' + (data.simulation_mode.includes('mock') ? 'badge-warning' : 'badge-info');
+
+            renderHeatmap(data.segments);
+            renderChurnChart(data.segments);
+            renderGini(data.gini_satisfaction);
+            renderProjectionChart(data.weekly_projections);
+            renderSignal(data.feature_signal);
+            renderDeltaChart(data.segments);
+        }
+
+        // ── Heatmap ───────────────────────────────────
+        function renderHeatmap(segments) {
+            const body = document.getElementById('heatmapBody');
+            body.innerHTML = '';
+
+            const segmentLabels = {
+                power_user: '⚡ Power User',
+                casual_browser: '🌐 Casual Browser',
+                price_sensitive: '💰 Price Sensitive',
+                early_adopter: '🚀 Early Adopter',
+                enterprise_user: '🏢 Enterprise',
+            };
+
+            for (const [seg, data] of Object.entries(segments)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${segmentLabels[seg] || seg}</td>
+                    <td class="${getCellClass(data.engagement.mean, 'engagement')}">${formatDelta(data.engagement.mean)}</td>
+                    <td class="${getCellClass(data.churn_risk.mean, 'churn')}">${formatDelta(data.churn_risk.mean, true)}</td>
+                    <td class="${getCellClass(data.satisfaction.mean, 'satisfaction')}">${formatDelta(data.satisfaction.mean)}</td>
+                    <td class="${data.churn_rate > 15 ? 'cell-negative-strong' : data.churn_rate > 5 ? 'cell-negative' : 'cell-neutral'}">${data.churn_rate}%</td>
+                `;
+                body.appendChild(row);
+            }
+        }
+
+        function getCellClass(value, type) {
+            if (type === 'churn') {
+                // For churn, positive is bad
+                if (value > 0.05) return 'cell-negative-strong';
+                if (value > 0.01) return 'cell-negative';
+                if (value < -0.01) return 'cell-positive';
+                if (value < -0.05) return 'cell-positive-strong';
+                return 'cell-neutral';
+            }
+            // For engagement/satisfaction, positive is good
+            if (value > 10) return 'cell-positive-strong';
+            if (value > 2) return 'cell-positive';
+            if (value < -10) return 'cell-negative-strong';
+            if (value < -2) return 'cell-negative';
+            return 'cell-neutral';
+        }
+
+        function formatDelta(val, isChurn = false) {
+            if (isChurn) return (val >= 0 ? '+' : '') + (val * 100).toFixed(1) + '%';
+            return (val >= 0 ? '+' : '') + val.toFixed(1);
+        }
+
+        // ── Churn Chart ───────────────────────────────
+        function renderChurnChart(segments) {
+            if (churnChartInstance) churnChartInstance.destroy();
+
+            const labels = Object.keys(segments).map(s => s.replace(/_/g, ' '));
+            const churnRates = Object.values(segments).map(s => s.churn_rate);
+
+            const ctx = document.getElementById('churnChart').getContext('2d');
+            churnChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Churn Rate %',
+                        data: churnRates,
+                        backgroundColor: churnRates.map(v =>
+                            v > 20 ? 'rgba(239, 68, 68, 0.6)' :
+                            v > 10 ? 'rgba(245, 158, 11, 0.6)' :
+                            'rgba(16, 185, 129, 0.6)'
+                        ),
+                        borderColor: churnRates.map(v =>
+                            v > 20 ? '#ef4444' : v > 10 ? '#f59e0b' : '#10b981'
+                        ),
+                        borderWidth: 2,
+                        borderRadius: 8,
+                    }],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#8b9dc3', callback: v => v + '%' },
+                            grid: { color: 'rgba(255,255,255,0.04)' },
+                        },
+                        x: {
+                            ticks: { color: '#8b9dc3', font: { size: 11 } },
+                            grid: { display: false },
+                        },
+                    },
+                },
+            });
+        }
+
+        // ── Gini ──────────────────────────────────────
+        function renderGini(gini) {
+            const fill = document.getElementById('giniFill');
+            const val = document.getElementById('giniValue');
+            const verdict = document.getElementById('giniVerdict');
+
+            const pct = Math.min(100, gini * 100);
+            fill.style.width = pct + '%';
+
+            if (gini > 0.3) {
+                fill.style.background = 'linear-gradient(90deg, #f59e0b, #ef4444)';
+                val.style.color = 'var(--accent-red)';
+                verdict.textContent = '⚠️ Unequal — Benefits are unevenly distributed';
+                verdict.style.background = 'rgba(239, 68, 68, 0.1)';
+                verdict.style.color = 'var(--accent-red)';
+            } else {
+                fill.style.background = 'linear-gradient(90deg, #10b981, #06b6d4)';
+                val.style.color = 'var(--accent-green)';
+                verdict.textContent = '✅ Fair — Impact is relatively balanced';
+                verdict.style.background = 'rgba(16, 185, 129, 0.1)';
+                verdict.style.color = 'var(--accent-green)';
+            }
+
+            val.textContent = gini.toFixed(2);
+        }
+
+        // ── Projection Chart ──────────────────────────
+        function renderProjectionChart(projections) {
+            if (projectionChartInstance) projectionChartInstance.destroy();
+
+            const weeks = projections.map(p => 'Week ' + p.week);
+            const segColors = {
+                power_user: { bg: 'rgba(59, 130, 246, 0.2)', border: '#3b82f6' },
+                casual_browser: { bg: 'rgba(245, 158, 11, 0.2)', border: '#f59e0b' },
+                price_sensitive: { bg: 'rgba(239, 68, 68, 0.2)', border: '#ef4444' },
+                early_adopter: { bg: 'rgba(16, 185, 129, 0.2)', border: '#10b981' },
+                enterprise_user: { bg: 'rgba(139, 92, 246, 0.2)', border: '#8b5cf6' },
+            };
+
+            const datasets = [];
+            const segments = Object.keys(projections[0].segments);
+
+            for (const seg of segments) {
+                datasets.push({
+                    label: seg.replace(/_/g, ' '),
+                    data: projections.map(p => p.segments[seg].churn_rate),
+                    borderColor: segColors[seg]?.border || '#888',
+                    backgroundColor: segColors[seg]?.bg || 'rgba(136,136,136,0.2)',
+                    borderWidth: 2.5,
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                });
+            }
+
+            const ctx = document.getElementById('projectionChart').getContext('2d');
+            projectionChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: weeks, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#8b9dc3', font: { size: 11 }, padding: 16 } },
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#8b9dc3', callback: v => v + '%' },
+                            grid: { color: 'rgba(255,255,255,0.04)' },
+                            title: { display: true, text: 'Churn Rate %', color: '#5a6d8a' },
+                        },
+                        x: {
+                            ticks: { color: '#8b9dc3' },
+                            grid: { display: false },
+                        },
+                    },
+                    interaction: { mode: 'index', intersect: false },
+                },
+            });
+        }
+
+        // ── Feature Signal ────────────────────────────
+        function renderSignal(signal) {
+            const grid = document.getElementById('signalGrid');
+            grid.innerHTML = `
+                <div class="signal-item">
+                    <div class="signal-item-label">Feature Name</div>
+                    <div class="signal-item-value">${signal.feature_name}</div>
+                </div>
+                <div class="signal-item">
+                    <div class="signal-item-label">Change Type</div>
+                    <div class="signal-item-value" style="text-transform: uppercase;">${signal.change_type}</div>
+                </div>
+                <div class="signal-item">
+                    <div class="signal-item-label">Magnitude</div>
+                    <div class="signal-item-value">${(signal.magnitude_estimate * 100).toFixed(0)}%</div>
+                </div>
+                <div class="signal-item">
+                    <div class="signal-item-label">Confidence</div>
+                    <div class="signal-item-value">${(signal.confidence * 100).toFixed(0)}%</div>
+                </div>
+                <div class="signal-item" style="grid-column: 1 / -1;">
+                    <div class="signal-item-label">Affected Dimensions</div>
+                    <div class="signal-item-value">${signal.affected_dimensions.join(', ')}</div>
+                </div>
+            `;
+        }
+
+        // ── Delta Chart ───────────────────────────────
+        function renderDeltaChart(segments) {
+            if (deltaChartInstance) deltaChartInstance.destroy();
+
+            const labels = Object.keys(segments).map(s => s.replace(/_/g, ' '));
+            const engDeltas = Object.values(segments).map(s => s.engagement.mean);
+            const satDeltas = Object.values(segments).map(s => s.satisfaction.mean);
+
+            const ctx = document.getElementById('deltaChart').getContext('2d');
+            deltaChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Engagement Δ',
+                            data: engDeltas,
+                            backgroundColor: 'rgba(6, 182, 212, 0.5)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 2, borderRadius: 6,
+                        },
+                        {
+                            label: 'Satisfaction Δ',
+                            data: satDeltas,
+                            backgroundColor: 'rgba(236, 72, 153, 0.5)',
+                            borderColor: '#ec4899',
+                            borderWidth: 2, borderRadius: 6,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#8b9dc3', font: { size: 11 } } },
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#8b9dc3' },
+                            grid: { color: 'rgba(255,255,255,0.04)' },
+                        },
+                        x: {
+                            ticks: { color: '#8b9dc3', font: { size: 11 } },
+                            grid: { display: false },
+                        },
+                    },
+                },
+            });
+        }
+
+        // ── Requestly: Fetch API Log ──────────────────
+        async function fetchRequestLog() {
+            const logEl = document.getElementById('requestLog');
+            logEl.classList.remove('hidden');
+
+            try {
+                const resp = await fetch(`${API_BASE}/api/request-log`);
+                const data = await resp.json();
+
+                if (data.requests.length === 0) {
+                    logEl.innerHTML = '<div style="color: var(--text-muted); padding: 16px; text-align: center;">No API requests logged yet. Run a simulation first!</div>';
+                    return;
+                }
+
+                logEl.innerHTML = data.requests.reverse().map(r => `
+                    <div class="request-log-entry">
+                        <span class="log-method ${r.method === 'GET' ? 'log-get' : 'log-post'}">${r.method}</span>
+                        <span class="log-path">${r.path}</span>
+                        <span class="log-time">${r.processing_time_ms}ms</span>
+                        <span class="log-status ${r.status_code === 200 ? 'ok' : 'err'}">${r.status_code}</span>
+                        <span style="color: var(--text-muted); font-size: 10px;">${r.request_id}</span>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                logEl.innerHTML = `<div style="color: var(--accent-red); padding: 16px;">Error fetching log: ${err.message}</div>`;
+            }
+        }
+
+        // ── Requestly: Download Collection ────────────
+        async function downloadRequestlyCollection() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/requestly-collection`);
+                const data = await resp.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'hn26-sandbox-requestly-collection.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                alert('Error downloading collection: ' + err.message);
+            }
+        }
+
+        // ── Init: check backend ───────────────────────
+        (async function init() {
+            try {
+                const resp = await fetch(`${API_BASE}/health`);
+                const data = await resp.json();
+                document.getElementById('statusText').textContent =
+                    `${data.population_loaded.toLocaleString()} users loaded · ${data.simulations_run} simulations`;
+            } catch (err) {
+                document.getElementById('statusText').textContent = '⚠️ Backend not connected';
+            }
+        })();
+
+        // ── Keyboard shortcut ─────────────────────────
+        document.getElementById('featureInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                runSimulation();
+            }
+        });
+    </script>
+</body>
+</html>
