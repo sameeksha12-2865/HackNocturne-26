@@ -1,0 +1,66 @@
+{
+  "stage1_mapper": {
+    "nodes": 292,
+    "edges": 458,
+    "components": 4
+  },
+  "stage2_sample": {
+    "flare_customers": 41,
+    "churn_rate": 0.9512195121951219,
+    "global_churn": 0.2881853977706819,
+    "enrichment": 3.300720715044823,
+    "archetype": "Silent Disengager \u2014 low usage, rising charges, never complains"
+  },
+  "stage3_dag": {
+    "edges": [
+      [
+        "customercarecalls",
+        "churn"
+      ],
+      [
+        "droppedcalls",
+        "churn"
+      ],
+      [
+        "monthsinservice",
+        "churn"
+      ],
+      [
+        "retentioncalls",
+        "churn"
+      ]
+    ],
+    "primary_treatment": "monthsinservice",
+    "causal_story": "Customers with high churn rates are typically those who have been with the service for a long time, show signs of dissatisfaction through frequent customer care calls, experience many dropped calls indicating poor network quality, and receive few retention calls, all contributing to their decision to churn."
+  },
+  "stage4_estimates": [
+    {
+      "feature": "customercarecalls",
+      "ate_per_unit": 0.00798620758661317,
+      "effect_1sd": 0.040698813720990594,
+      "pct_churn_change": 4.278593237334909,
+      "robust": true
+    },
+    {
+      "feature": "droppedcalls",
+      "ate_per_unit": 0.0009436145902409487,
+      "effect_1sd": 0.008534008324499557,
+      "pct_churn_change": 0.8971649777037997,
+      "robust": true
+    },
+    {
+      "feature": "monthsinservice",
+      "ate_per_unit": 0.0005971320361105592,
+      "effect_1sd": 0.005851976074282704,
+      "pct_churn_change": 0.6152077411425407,
+      "robust": false
+    },
+    {
+      "feature": "retentioncalls",
+      "ate_per_unit": -0.005346134791775481,
+      "effect_1sd": -0.0011038852822413073,
+      "pct_churn_change": -0.11604947838947079,
+      "robust": false
+    }
+  ]
+}
