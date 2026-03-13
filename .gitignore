@@ -1,0 +1,22 @@
+# Environment — NEVER commit API keys
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Data
+data/
+
+# Model artefacts
+models/scaler.pkl
+models/approximator.pt
+
+# IDE
+.vscode/
+.idea/
+*.DS_Store
