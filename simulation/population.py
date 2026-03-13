@@ -1,227 +1,247 @@
-"""
-Synthetic Population Engine — Layer 1
-Generates diverse user profiles with realistic distributions for product impact simulation.
-"""
-from __future__ import annotations
-
 import json
-import os
-import random
 import numpy as np
 import pandas as pd
 from faker import Faker
+from typing import List, Dict
+import os
 
 fake = Faker()
-Faker.seed(42)
 np.random.seed(42)
-random.seed(42)
 
-# ── Segment definitions ────────────────────────────────────────────
-SEGMENTS = ['power_user', 'casual_browser', 'price_sensitive', 'early_adopter', 'enterprise_user']
-
+# ── Segment definitions ────────────────────────────────────────────────────────
+# Each segment: (min_pct_of_population, attribute distributions)
 SEGMENT_DISTRIBUTIONS = {
-    'power_user': {
-        'weight': 0.20,
-        'age_mean': 30, 'age_std': 6,
-        'income_weights': {'low': 0.10, 'mid': 0.40, 'high': 0.50},
-        'usage_weights': {'daily': 0.80, 'weekly': 0.15, 'occasional': 0.05},
-        'tech_savviness_range': (7, 10),
-        'price_sensitivity_range': (1, 5),
-        'feature_adoption_mean': 0.7, 'feature_adoption_std': 0.12,
-        'subscription_weights': {'free': 0.05, 'basic': 0.25, 'premium': 0.70},
-        'churn_baseline_range': (0.01, 0.04),
-        'engagement_mean': 85, 'engagement_std': 8,
-        'satisfaction_mean': 80, 'satisfaction_std': 10,
+    "power_user": {
+        "weight": 0.18,
+        "age":                  {"dist": "normal",  "mu": 29,  "sigma": 5,    "clip": (18, 50)},
+        "income_tier":          {"dist": "choice",  "options": ["mid", "high"],          "p": [0.35, 0.65]},
+        "usage_frequency":      {"dist": "choice",  "options": ["daily", "weekly", "occasional"], "p": [0.80, 0.15, 0.05]},
+        "tech_savviness":       {"dist": "normal",  "mu": 8.5, "sigma": 1.0,  "clip": (6, 10)},
+        "price_sensitivity":    {"dist": "normal",  "mu": 3.5, "sigma": 1.5,  "clip": (1, 10)},
+        "feature_adoption_rate":{"dist": "normal",  "mu": 0.78,"sigma": 0.12, "clip": (0.4, 1.0)},
+        "subscription_tier":    {"dist": "choice",  "options": ["free","basic","premium"],  "p": [0.05, 0.25, 0.70]},
+        "churn_risk_baseline":  {"dist": "normal",  "mu": 0.08,"sigma": 0.04, "clip": (0.01, 0.30)},
+        "engagement_score":     {"dist": "normal",  "mu": 82,  "sigma": 10,   "clip": (50, 100)},
+        "satisfaction_score":   {"dist": "normal",  "mu": 78,  "sigma": 10,   "clip": (40, 100)},
     },
-    'casual_browser': {
-        'weight': 0.25,
-        'age_mean': 35, 'age_std': 12,
-        'income_weights': {'low': 0.30, 'mid': 0.50, 'high': 0.20},
-        'usage_weights': {'daily': 0.05, 'weekly': 0.35, 'occasional': 0.60},
-        'tech_savviness_range': (2, 6),
-        'price_sensitivity_range': (3, 7),
-        'feature_adoption_mean': 0.15, 'feature_adoption_std': 0.08,
-        'subscription_weights': {'free': 0.70, 'basic': 0.25, 'premium': 0.05},
-        'churn_baseline_range': (0.05, 0.10),
-        'engagement_mean': 30, 'engagement_std': 15,
-        'satisfaction_mean': 55, 'satisfaction_std': 15,
+    "casual_browser": {
+        "weight": 0.28,
+        "age":                  {"dist": "normal",  "mu": 35,  "sigma": 10,   "clip": (18, 65)},
+        "income_tier":          {"dist": "choice",  "options": ["low","mid","high"],      "p": [0.30, 0.55, 0.15]},
+        "usage_frequency":      {"dist": "choice",  "options": ["daily","weekly","occasional"], "p": [0.15, 0.45, 0.40]},
+        "tech_savviness":       {"dist": "normal",  "mu": 5.0, "sigma": 1.8,  "clip": (1, 10)},
+        "price_sensitivity":    {"dist": "normal",  "mu": 5.5, "sigma": 2.0,  "clip": (1, 10)},
+        "feature_adoption_rate":{"dist": "normal",  "mu": 0.30,"sigma": 0.12, "clip": (0.05, 0.70)},
+        "subscription_tier":    {"dist": "choice",  "options": ["free","basic","premium"],  "p": [0.55, 0.35, 0.10]},
+        "churn_risk_baseline":  {"dist": "normal",  "mu": 0.22,"sigma": 0.08, "clip": (0.05, 0.60)},
+        "engagement_score":     {"dist": "normal",  "mu": 42,  "sigma": 15,   "clip": (10, 75)},
+        "satisfaction_score":   {"dist": "normal",  "mu": 55,  "sigma": 14,   "clip": (20, 85)},
     },
-    'price_sensitive': {
-        'weight': 0.25,
-        'age_mean': 28, 'age_std': 8,
-        'income_weights': {'low': 0.55, 'mid': 0.35, 'high': 0.10},
-        'usage_weights': {'daily': 0.30, 'weekly': 0.45, 'occasional': 0.25},
-        'tech_savviness_range': (3, 7),
-        'price_sensitivity_range': (7, 10),
-        'feature_adoption_mean': 0.35, 'feature_adoption_std': 0.15,
-        'subscription_weights': {'free': 0.50, 'basic': 0.40, 'premium': 0.10},
-        'churn_baseline_range': (0.05, 0.08),
-        'engagement_mean': 55, 'engagement_std': 18,
-        'satisfaction_mean': 50, 'satisfaction_std': 18,
+    "price_sensitive": {
+        "weight": 0.25,
+        "age":                  {"dist": "normal",  "mu": 31,  "sigma": 9,    "clip": (18, 60)},
+        "income_tier":          {"dist": "choice",  "options": ["low","mid","high"],      "p": [0.65, 0.30, 0.05]},
+        "usage_frequency":      {"dist": "choice",  "options": ["daily","weekly","occasional"], "p": [0.30, 0.40, 0.30]},
+        "tech_savviness":       {"dist": "normal",  "mu": 5.5, "sigma": 2.0,  "clip": (1, 10)},
+        "price_sensitivity":    {"dist": "normal",  "mu": 8.5, "sigma": 1.0,  "clip": (5, 10)},
+        "feature_adoption_rate":{"dist": "normal",  "mu": 0.25,"sigma": 0.10, "clip": (0.05, 0.60)},
+        "subscription_tier":    {"dist": "choice",  "options": ["free","basic","premium"],  "p": [0.70, 0.25, 0.05]},
+        "churn_risk_baseline":  {"dist": "normal",  "mu": 0.35,"sigma": 0.10, "clip": (0.10, 0.70)},
+        "engagement_score":     {"dist": "normal",  "mu": 48,  "sigma": 14,   "clip": (10, 80)},
+        "satisfaction_score":   {"dist": "normal",  "mu": 50,  "sigma": 15,   "clip": (15, 80)},
     },
-    'early_adopter': {
-        'weight': 0.15,
-        'age_mean': 26, 'age_std': 5,
-        'income_weights': {'low': 0.15, 'mid': 0.45, 'high': 0.40},
-        'usage_weights': {'daily': 0.60, 'weekly': 0.30, 'occasional': 0.10},
-        'tech_savviness_range': (8, 10),
-        'price_sensitivity_range': (2, 6),
-        'feature_adoption_mean': 0.8, 'feature_adoption_std': 0.10,
-        'subscription_weights': {'free': 0.10, 'basic': 0.30, 'premium': 0.60},
-        'churn_baseline_range': (0.03, 0.06),
-        'engagement_mean': 75, 'engagement_std': 12,
-        'satisfaction_mean': 72, 'satisfaction_std': 12,
+    "early_adopter": {
+        "weight": 0.15,
+        "age":                  {"dist": "normal",  "mu": 26,  "sigma": 5,    "clip": (18, 45)},
+        "income_tier":          {"dist": "choice",  "options": ["low","mid","high"],      "p": [0.15, 0.50, 0.35]},
+        "usage_frequency":      {"dist": "choice",  "options": ["daily","weekly","occasional"], "p": [0.65, 0.28, 0.07]},
+        "tech_savviness":       {"dist": "normal",  "mu": 9.0, "sigma": 0.8,  "clip": (7, 10)},
+        "price_sensitivity":    {"dist": "normal",  "mu": 4.0, "sigma": 1.5,  "clip": (1, 8)},
+        "feature_adoption_rate":{"dist": "normal",  "mu": 0.88,"sigma": 0.08, "clip": (0.65, 1.0)},
+        "subscription_tier":    {"dist": "choice",  "options": ["free","basic","premium"],  "p": [0.10, 0.30, 0.60]},
+        "churn_risk_baseline":  {"dist": "normal",  "mu": 0.12,"sigma": 0.05, "clip": (0.02, 0.35)},
+        "engagement_score":     {"dist": "normal",  "mu": 88,  "sigma": 8,    "clip": (60, 100)},
+        "satisfaction_score":   {"dist": "normal",  "mu": 82,  "sigma": 9,    "clip": (55, 100)},
     },
-    'enterprise_user': {
-        'weight': 0.15,
-        'age_mean': 40, 'age_std': 8,
-        'income_weights': {'low': 0.05, 'mid': 0.30, 'high': 0.65},
-        'usage_weights': {'daily': 0.50, 'weekly': 0.40, 'occasional': 0.10},
-        'tech_savviness_range': (5, 9),
-        'price_sensitivity_range': (1, 4),
-        'feature_adoption_mean': 0.45, 'feature_adoption_std': 0.15,
-        'subscription_weights': {'free': 0.02, 'basic': 0.18, 'premium': 0.80},
-        'churn_baseline_range': (0.01, 0.03),
-        'engagement_mean': 70, 'engagement_std': 10,
-        'satisfaction_mean': 75, 'satisfaction_std': 8,
+    "enterprise_user": {
+        "weight": 0.14,
+        "age":                  {"dist": "normal",  "mu": 42,  "sigma": 8,    "clip": (28, 60)},
+        "income_tier":          {"dist": "choice",  "options": ["low","mid","high"],      "p": [0.02, 0.28, 0.70]},
+        "usage_frequency":      {"dist": "choice",  "options": ["daily","weekly","occasional"], "p": [0.70, 0.25, 0.05]},
+        "tech_savviness":       {"dist": "normal",  "mu": 6.5, "sigma": 1.8,  "clip": (3, 10)},
+        "price_sensitivity":    {"dist": "normal",  "mu": 2.5, "sigma": 1.2,  "clip": (1, 7)},
+        "feature_adoption_rate":{"dist": "normal",  "mu": 0.45,"sigma": 0.15, "clip": (0.15, 0.80)},
+        "subscription_tier":    {"dist": "choice",  "options": ["free","basic","premium"],  "p": [0.02, 0.18, 0.80]},
+        "churn_risk_baseline":  {"dist": "normal",  "mu": 0.06,"sigma": 0.03, "clip": (0.01, 0.20)},
+        "engagement_score":     {"dist": "normal",  "mu": 72,  "sigma": 12,   "clip": (40, 100)},
+        "satisfaction_score":   {"dist": "normal",  "mu": 70,  "sigma": 12,   "clip": (35, 95)},
     },
 }
 
 
-def _weighted_choice(options: dict) -> str:
-    """Pick from a dict of {option: probability_weight}."""
-    keys = list(options.keys())
-    weights = list(options.values())
-    return random.choices(keys, weights=weights, k=1)[0]
+# ── Attribute sampler ──────────────────────────────────────────────────────────
+
+def _sample_attr(cfg: dict, n: int) -> np.ndarray:
+    if cfg["dist"] == "normal":
+        vals = np.random.normal(cfg["mu"], cfg["sigma"], n)
+        vals = np.clip(vals, cfg["clip"][0], cfg["clip"][1])
+        return vals
+    elif cfg["dist"] == "choice":
+        return np.random.choice(cfg["options"], size=n, p=cfg["p"])
+    raise ValueError(f"Unknown dist: {cfg['dist']}")
 
 
-def _clamp(value, lo, hi):
-    return max(lo, min(hi, value))
+# ── Single-segment generator ───────────────────────────────────────────────────
+
+def _generate_segment(segment_label: str, n: int, id_offset: int) -> List[Dict]:
+    cfg = SEGMENT_DISTRIBUTIONS[segment_label]
+    users = []
+
+    ages               = _sample_attr(cfg["age"], n).astype(int)
+    income_tiers       = _sample_attr(cfg["income_tier"], n)
+    usage_freqs        = _sample_attr(cfg["usage_frequency"], n)
+    tech_sav           = np.round(_sample_attr(cfg["tech_savviness"], n), 1)
+    price_sens         = np.round(_sample_attr(cfg["price_sensitivity"], n), 1)
+    adoption_rates     = np.round(_sample_attr(cfg["feature_adoption_rate"], n), 3)
+    sub_tiers          = _sample_attr(cfg["subscription_tier"], n)
+    churn_risks        = np.round(_sample_attr(cfg["churn_risk_baseline"], n), 4)
+    engagement_scores  = np.round(_sample_attr(cfg["engagement_score"], n), 1)
+    satisfaction_scores= np.round(_sample_attr(cfg["satisfaction_score"], n), 1)
+
+    for i in range(n):
+        users.append({
+            "user_id":              f"u_{id_offset + i:06d}",
+            "segment_label":        segment_label,
+            "age":                  int(ages[i]),
+            "income_tier":          str(income_tiers[i]),
+            "usage_frequency":      str(usage_freqs[i]),
+            "tech_savviness":       float(tech_sav[i]),
+            "price_sensitivity":    float(price_sens[i]),
+            "feature_adoption_rate":float(adoption_rates[i]),
+            "subscription_tier":    str(sub_tiers[i]),
+            "churn_risk_baseline":  float(churn_risks[i]),
+            "engagement_score":     float(engagement_scores[i]),
+            "satisfaction_score":   float(satisfaction_scores[i]),
+            "name":                 fake.name(),
+            "email":                fake.email(),
+            "locale":               fake.locale(),
+            "country":              fake.country(),
+        })
+    return users
 
 
-def generate_user(user_id: int, segment: str) -> dict:
-    """Generate a single user profile for the given segment."""
-    cfg = SEGMENT_DISTRIBUTIONS[segment]
+# ── Main generator ─────────────────────────────────────────────────────────────
 
-    age = int(_clamp(np.random.normal(cfg['age_mean'], cfg['age_std']), 18, 65))
-    income_tier = _weighted_choice(cfg['income_weights'])
-    usage_frequency = _weighted_choice(cfg['usage_weights'])
-    tech_savviness = random.randint(*cfg['tech_savviness_range'])
-    price_sensitivity = random.randint(*cfg['price_sensitivity_range'])
-    feature_adoption_rate = round(_clamp(
-        np.random.normal(cfg['feature_adoption_mean'], cfg['feature_adoption_std']), 0.0, 1.0
-    ), 3)
-    subscription_tier = _weighted_choice(cfg['subscription_weights'])
-    churn_risk_baseline = round(random.uniform(*cfg['churn_baseline_range']), 4)
-    engagement_score = int(_clamp(np.random.normal(cfg['engagement_mean'], cfg['engagement_std']), 0, 100))
-    satisfaction_score = int(_clamp(np.random.normal(cfg['satisfaction_mean'], cfg['satisfaction_std']), 0, 100))
+def generate_population(n: int = 5000, seed: int = 42) -> List[Dict]:
+    """
+    Generate a stratified synthetic population of n users.
+    Each segment gets at least 10% representation.
+    Returns list of user dicts.
+    """
+    np.random.seed(seed)
+    fake.seed_instance(seed)
 
-    return {
-        'user_id': f'USR-{user_id:05d}',
-        'name': fake.name(),
-        'email': fake.email(),
-        'age': age,
-        'income_tier': income_tier,
-        'usage_frequency': usage_frequency,
-        'tech_savviness': tech_savviness,
-        'price_sensitivity': price_sensitivity,
-        'feature_adoption_rate': feature_adoption_rate,
-        'subscription_tier': subscription_tier,
-        'churn_risk_baseline': churn_risk_baseline,
-        'engagement_score': engagement_score,
-        'satisfaction_score': satisfaction_score,
-        'segment_label': segment,
+    segments      = list(SEGMENT_DISTRIBUTIONS.keys())
+    weights       = np.array([SEGMENT_DISTRIBUTIONS[s]["weight"] for s in segments])
+    weights       = weights / weights.sum()          # normalize (should already sum to 1)
+
+    # Enforce minimum 10% per segment
+    min_pct   = 0.10
+    n_segments= len(segments)
+    counts    = np.maximum((weights * n).astype(int), int(n * min_pct))
+
+    # Adjust so total == n (add/subtract from largest segment)
+    diff = n - counts.sum()
+    largest_idx = int(np.argmax(counts))
+    counts[largest_idx] += diff
+
+    all_users  = []
+    id_offset  = 0
+    for seg, count in zip(segments, counts):
+        users     = _generate_segment(seg, int(count), id_offset)
+        all_users.extend(users)
+        id_offset += count
+
+    # Shuffle so segments aren't contiguous
+    np.random.shuffle(all_users)
+    # Re-assign sequential IDs after shuffle
+    for idx, user in enumerate(all_users):
+        user["user_id"] = f"u_{idx:06d}"
+
+    return all_users
+
+
+# ── Validation ─────────────────────────────────────────────────────────────────
+
+def validate_population(users: List[Dict], tolerance: float = 0.05) -> bool:
+    df = pd.DataFrame(users)
+    total = len(df)
+    print(f"\n{'='*55}")
+    print(f"  Population size : {total:,}")
+    print(f"{'='*55}")
+
+    all_passed = True
+    segment_counts = df["segment_label"].value_counts()
+
+    print("\n  Segment distribution:")
+    for seg in SEGMENT_DISTRIBUTIONS:
+        actual_pct  = segment_counts.get(seg, 0) / total
+        target_pct  = SEGMENT_DISTRIBUTIONS[seg]["weight"]
+        status      = "✓" if abs(actual_pct - target_pct) <= tolerance + 0.02 else "✗"
+        if status == "✗":
+            all_passed = False
+        print(f"    {status} {seg:<18} actual={actual_pct:.2%}  target={target_pct:.2%}")
+
+    print("\n  Numerical attribute ranges:")
+    checks = {
+        "age":                   (18, 65),
+        "tech_savviness":        (1,  10),
+        "price_sensitivity":     (1,  10),
+        "feature_adoption_rate": (0,   1),
+        "churn_risk_baseline":   (0,   1),
+        "engagement_score":      (0, 100),
+        "satisfaction_score":    (0, 100),
+    }
+    for col, (lo, hi) in checks.items():
+        mn, mx = df[col].min(), df[col].max()
+        ok = lo <= mn and mx <= hi
+        if not ok:
+            all_passed = False
+        print(f"    {'✓' if ok else '✗'} {col:<28} min={mn:.2f}  max={mx:.2f}")
+
+    print("\n  Subscription tier split:")
+    print(df["subscription_tier"].value_counts(normalize=True).to_string())
+    print("\n  Income tier split:")
+    print(df["income_tier"].value_counts(normalize=True).to_string())
+
+    print(f"\n{'='*55}")
+    print(f"  Validation {'PASSED ✓' if all_passed else 'FAILED ✗'}")
+    print(f"{'='*55}\n")
+    return all_passed
+
+
+# ── Save helpers ───────────────────────────────────────────────────────────────
+
+def save_population(users: List[Dict], prefix: str = "population"):
+    with open(f"{prefix}.json", "w") as f:
+        json.dump(users, f, indent=2)
+    pd.DataFrame(users).to_csv(f"{prefix}.csv", index=False)
+    print(f"  Saved {prefix}.json and {prefix}.csv  ({len(users):,} users)")
+
+
+# ── Entry point ────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    sizes = {
+        "population_dev":    1000,    # quick iteration
+        "population_demo":   5000,    # hackathon demo  ← main one
+        "population_stress": 15000,   # stress test
     }
 
+    for prefix, n in sizes.items():
+        print(f"\nGenerating {prefix}  (n={n:,}) ...")
+        users = generate_population(n=n, seed=42)
+        validate_population(users)
+        save_population(users, prefix=prefix)
 
-def generate_population(n: int = 2000) -> list[dict]:
-    """
-    Generate a synthetic population with stratified segment representation.
-    Each segment gets at least 10% of the population.
-    """
-    population = []
-    user_id = 1
-
-    # Assign users per segment based on weights (minimum 10%)
-    segment_counts = {}
-    for seg, cfg in SEGMENT_DISTRIBUTIONS.items():
-        count = max(int(n * cfg['weight']), int(n * 0.10))
-        segment_counts[seg] = count
-
-    # Adjust to exactly n
-    total = sum(segment_counts.values())
-    if total < n:
-        # Add remainder to the largest segment
-        largest = max(segment_counts, key=segment_counts.get)
-        segment_counts[largest] += n - total
-    elif total > n:
-        largest = max(segment_counts, key=segment_counts.get)
-        segment_counts[largest] -= total - n
-
-    for segment, count in segment_counts.items():
-        for _ in range(count):
-            population.append(generate_user(user_id, segment))
-            user_id += 1
-
-    random.shuffle(population)
-    return population
-
-
-def validate_population(population: list[dict]) -> dict:
-    """Validate population distributions and return stats."""
-    df = pd.DataFrame(population)
-    stats = {
-        'total_users': len(df),
-        'segments': {},
-    }
-    for seg in SEGMENTS:
-        seg_df = df[df['segment_label'] == seg]
-        pct = len(seg_df) / len(df) * 100
-        stats['segments'][seg] = {
-            'count': len(seg_df),
-            'percentage': round(pct, 1),
-            'avg_age': round(seg_df['age'].mean(), 1),
-            'avg_engagement': round(seg_df['engagement_score'].mean(), 1),
-            'avg_satisfaction': round(seg_df['satisfaction_score'].mean(), 1),
-            'avg_churn_risk': round(seg_df['churn_risk_baseline'].mean(), 4),
-            'avg_price_sensitivity': round(seg_df['price_sensitivity'].mean(), 1),
-        }
-    return stats
-
-
-def save_population(population: list[dict], output_dir: str = 'data'):
-    """Save population to JSON and CSV."""
-    os.makedirs(output_dir, exist_ok=True)
-
-    json_path = os.path.join(output_dir, 'population.json')
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(population, f, indent=2)
-    print(f"  Saved {len(population)} users to {json_path}")
-
-    csv_path = os.path.join(output_dir, 'population.csv')
-    pd.DataFrame(population).to_csv(csv_path, index=False)
-    print(f"  Saved CSV to {csv_path}")
-
-    return json_path, csv_path
-
-
-if __name__ == '__main__':
-    print("=" * 60)
-    print("  SYNTHETIC POPULATION ENGINE")
-    print("=" * 60)
-
-    pop = generate_population(2000)
-    stats = validate_population(pop)
-
-    print(f"\n  Generated {stats['total_users']} users across {len(stats['segments'])} segments:\n")
-    for seg, s in stats['segments'].items():
-        print(f"  {seg:20s}  {s['count']:5d} users ({s['percentage']:5.1f}%)  "
-              f"engagement={s['avg_engagement']:.0f}  churn={s['avg_churn_risk']:.3f}")
-
-    save_population(pop)
-
-    # Save stats for dashboard
-    os.makedirs('data', exist_ok=True)
-    with open('data/population_stats.json', 'w') as f:
-        json.dump(stats, f, indent=2)
-    print("\n  Done! Population ready for simulation.")
+    print("\nDone. Use population_demo.json for all live runs.\n")
