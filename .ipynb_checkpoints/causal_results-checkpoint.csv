@@ -1,0 +1,36 @@
+treatment,outcome,ate,placebo_ate,rcc_ate,placebo_passes,rcc_robust,identified
+customercarecalls,churn,0.00798620758661317,-0.0004165376641367291,0.007969120784515855,True,True,"Estimand type: EstimandType.NONPARAMETRIC_ATE
+
+### Estimand : 1
+Estimand name: backdoor
+Estimand expression:
+         d                    
+────────────────────(E[churn])
+d[customercarecalls]         "
+droppedcalls,churn,0.0009436145902409487,0.00015447696959829948,0.0009446871911854782,True,True,"Estimand type: EstimandType.NONPARAMETRIC_ATE
+
+### Estimand : 1
+Estimand name: backdoor
+Estimand expression:
+       d                 
+───────────────(E[churn])
+d[droppedcalls]          
+Estimand assu"
+monthsinservice,churn,0.0005971320361105592,0.00040105561963158507,0.0006008431699415284,False,True,"Estimand type: EstimandType.NONPARAMETRIC_ATE
+
+### Estimand : 1
+Estimand name: backdoor
+Estimand expression:
+        d                   
+──────────────────(E[churn])
+d[monthsinservice]          
+Esti"
+retentioncalls,churn,-0.005346134791775481,-0.004824691099330697,-0.005400371197719989,False,True,"Estimand type: EstimandType.NONPARAMETRIC_ATE
+
+### Estimand : 1
+Estimand name: backdoor
+Estimand expression:
+        d                  
+─────────────────(E[churn])
+d[retentioncalls]          
+Estiman"
