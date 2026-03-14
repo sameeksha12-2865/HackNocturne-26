@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Professional Template</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #14141a;
+      --border: rgba(255,255,255,0.07);
+      --accent: #c9a96e;
+      --accent-soft: rgba(201,169,110,0.12);
+      --text-primary: #f0ece4;
+      --text-muted: #8a8680;
+      --section-gap: 130px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE TEXTURE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 60px;
+      background: rgba(13,13,15,0.85);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 38px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 40px 80px;
+      position: relative;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 1px; height: 80px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+    }
+
+    .hero-eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.2s forwards;
+    }
+
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(3.2rem, 7vw, 6.5rem);
+      font-weight: 300;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      max-width: 820px;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.4s forwards;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      margin-top: 28px;
+      max-width: 500px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.6s forwards;
+    }
+
+    .hero-cta {
+      margin-top: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 36px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      transition: background 0.3s, color 0.3s;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.8s forwards;
+    }
+
+    .hero-cta:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 32px; height: 1px;
+      background: var(--accent);
+    }
+
+    /* ── SECTIONS WRAPPER ── */
+    .sections {
+      padding: 100px 0 var(--section-gap);
+    }
+
+    /* ── SINGLE FEATURE BLOCK ── */
+    .feature {
+      display: flex;
+      min-height: 420px;
+      border-top: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+      align-items: stretch;
+    }
+
+    .feature.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* reverse layout */
+    .feature.reverse { flex-direction: row-reverse; }
+    .feature.reverse > * { direction: ltr; }
+
+    /* ── IMAGE PANE ── */
+    .feature-img {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      max-height: 420px;
+    }
+
+    .feature-img img {
+      width: 100%;
+      height: auto;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+      filter: brightness(0.82) saturate(0.9);
+      transition: transform 0.7s ease, filter 0.5s ease;
+    }
+
+    /* ── WIDE IMAGE (per-section override) ── */
+    .feature-img.wide {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-height: 340px;
+    }
+
+    .feature-img.wide img {
+      width: auto;
+      height: 100%;
+      max-width: 100%;
+      object-fit: contain;
+    }
+
+    /* ── SECTION 8: match the text column height */
+    .feature#section-8 {
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .feature#section-8 .feature-img.wide {
+      max-height: 100%;
+      align-self: stretch;
+    }
+
+    .feature#section-8 .feature-img.wide img {
+      height: 100%;
+      width: auto;
+    }
+
+    .feature:hover .feature-img img {
+      transform: scale(1.04);
+      filter: brightness(0.92) saturate(1.1);
+    }
+
+    .feature-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(201,169,110,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .img-number {
+      position: absolute;
+      bottom: 28px; right: 28px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 4rem;
+      font-weight: 700;
+      color: rgba(201,169,110,0.18);
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    /* ── TEXT PANE ── */
+    .feature-text {
+      flex: 1;
+      padding: 70px 72px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: var(--surface);
+      position: relative;
+    }
+
+    .feature-text::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px; height: 60px;
+      background: var(--accent);
+    }
+
+    .feature.reverse .feature-text::before {
+      left: auto; right: 0;
+    }
+
+    .feature-text h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2rem, 3.2vw, 2.9rem);
+      font-weight: 400;
+      line-height: 1.18;
+      letter-spacing: -0.01em;
+      margin-bottom: 24px;
+    }
+
+    .feature-text h2 span {
+      display: block;
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .feature-text p {
+      color: var(--text-muted);
+      font-size: 0.93rem;
+      line-height: 1.85;
+      max-width: 420px;
+      margin-bottom: 32px;
+    }
+
+    .feature-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: gap 0.3s;
+    }
+
+    .feature-link:hover { gap: 18px; }
+
+    .feature-link svg {
+      width: 16px; height: 16px;
+      stroke: var(--accent);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* ── DIVIDER ── */
+    .ornament {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--border);
+      font-size: 1.4rem;
+      letter-spacing: 0.5em;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+
+    footer small {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 18px 24px; }
+      .nav-links { gap: 22px; }
+      .feature, .feature.reverse {
+        flex-direction: column;
+      }
+      .feature-text { padding: 48px 32px; }
+      .feature-img { min-height: 300px; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">churnscope</div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    
+    <h1><em>CHURNSCOPE AI  </em></h1>
+    <p class="hero-sub">AI system for deep churn analysis and insights</p>
+  </section>
+
+  <!-- SECTIONS -->
+  <div class="sections">
+
+    <!-- SECTION 1 — image RIGHT -->
+    <div class="feature" id="section-">
+      <div class="feature-text">
+        <div class="section-label">01 </div>
+        <h2>The Global GBM Baseline</h2>
+        <p>plot shows the global feature importance from the Gradient Boosting Model used for churn prediction, indicating which variables contribute most to the model’s decisions currentequipmentdays, monthsinservice, and monthlyminutes appear most influential, but global rankings may hide different causal patterns across specific customer subgroups.</p>
+        <!-- <a href="#" class="feature-link">
+          Explore Vision
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a> -->
+      </div>
+      <div class="feature-img">
+        <img src="global_importance.png" alt="Global GBM Baseline"/>
+        <div class="feature-img-overlay"></div>
+        <span class="img-number">01</span>
+      </div>
+    </div>
+
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+
+    <!-- SECTION 2 — image LEFT -->
+    <div class="feature reverse" id="section-2">
+      <div class="feature-text">
+        <div class="section-label">02</div>
+        <h2>Churn Flare Detection</h2>
+        <p>chart compares the average feature values during a churn flare to the overall global baseline using a ratio (flare mean / global mean). Features shown in green are suppressed during the flare, while monthsinservice is slightly elevated, suggesting customer tenure becomes more prominent during churn spikes.</p>
+        
+      </div>
+      <div class="feature-img">
+        <img src="churnflare.png" alt="Churn Flare Detection"/>
+        <div class="feature-img-overlay"></div>
+        <span class="img-number">02</span>
+      </div>
+    </div>
+
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+
+    <!-- SECTION 3 — image RIGHT -->
+    <div class="feature" id="section-3">
+      <div class="feature-text">
+        <div class="section-label">03</div>
+        <h2>Mapper Graph visualization</h2>
+        <p>KeplerMapper network visualization represents clusters of customers based on similar behavioral and usage patterns in the dataset. The red stars mark churn flare clusters, highlighting regions in the customer network where churn rates are significantly higher than average.</p>
+        
+      </div>
+      <div class="feature-img">
+        <img src="cell2cell_kepler.png" alt="Mapper Graph visualization"/>
+        <div class="feature-img-overlay"></div>
+        <span class="img-number">03</span>
+      </div>
+    </div>
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+
+    <div class="feature reverse" id="section-4">
+      <div class="feature-text">
+        <div class="section-label">04</div>
+        <h2>Topological Risk Scoring</h2>
+        <p>This scatter plot compares GBM churn probability with the topological risk score for each customer. The quadrants show where both models agree on high risk (top-right) and where topological analysis identifies risky customers that the GBM model may miss (top-left).</p>
+        
+      </div>
+      <div class="feature-img">
+        <img src="gbm_vs_topo.png" alt="gbm vs topological risk score"/>
+        <div class="feature-img-overlay"></div>
+        <span class="img-number">04</span>
+      </div>
+    </div>
+
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+    <!-- SECTION 5 — image RIGHT -->
+
+    <div class="feature" id="section-5">
+      <div class="feature-text">
+        <div class="section-label">05</div>
+        <h2>LLM Causal Dag</h2>
+        <p>This causal DAG generated using an LLM illustrates the assumed cause–effect relationships between customer features and churn. The arrows represent potential causal influences, showing how factors like monthsinservice, droppedcalls, monthlyrevenue, and percchangeminutes may contribute to the churn outcome.</p>
+        
+      </div>
+      <div class="feature-img">
+        <img src="llm_dag.png" alt="LLM Causal Dag"/>
+        <div class="feature-img-overlay"></div>
+        <span class="img-number">05</span>
+      </div>
+    </div>
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+    <!-- SECTION 6 — image LEFT -->
+    <div class="feature reverse" id="section-6">
+      <div class="feature-text">
+        <div class="section-label">06</div>
+        <h2>Impact Analytics Dashboard</h2>
+        <p>chart compares baseline churn rates with post-feature churn rates across different customer segments. It shows that churn probability increases across all segments, with the largest relative rise observed among engaged and power users.</p>
+        
+      </div>
+      <div class="feature-img">
+        <img src="impact1.png" alt="Impact Analytics Dashboard"/>
+        <div class="feature-img-overlay"></div>
+        <span class="img-number">06</span>
+      </div>
+    </div>
+
+
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+    <div class="feature" id="section-7">
+      <div class="feature-text">
+        <div class="section-label">07</div>
+        <h2>Impact Analytics Dashboard</h2>
+        <p>bar chart shows the change in Monthly Recurring Revenue (MRR) risk across different customer segments. It highlights that engaged and power users contribute the highest potential revenue loss if they churn, making them key targets for retention strategies.</p>
+        
+      </div>
+      <div class="feature-img">
+        <img src="impact2.jpg" alt="Impact Analytics Dashboard"/>
+        <div class="feature-img-overlay"></div>
+        <span class="img-number">07</span>
+      </div>
+    </div>
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+
+    <!-- SECTION 8 — wide image -->
+    <div class="feature" id="section-8">
+      <div class="feature-text">
+        <div class="section-label">08</div>
+        <h2>Impact Projection</h2>
+        <p>This chart is wider than the others, so we limit its height to match the text column while letting it scale naturally in width.</p>
+      </div>
+      <div class="feature-img wide">
+        <img src="impact_projection.png" alt="Wide Impact Projection"/>
+        <div class="feature-img-overlay"></div>
+        <span class="img-number">08</span>
+      </div>
+    </div>
+
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">churnscope</div>
+    
+  </footer>
+
+  <!-- SCROLL REVEAL -->
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.feature').forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>
