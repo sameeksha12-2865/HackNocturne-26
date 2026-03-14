@@ -219,6 +219,33 @@
       transition: transform 0.7s ease, filter 0.5s ease;
     }
 
+    /* ── IMAGE HOVER SWAP (per-image toggle) ── */
+    .feature-img.hover-swap {
+      position: relative;
+    }
+
+    .feature-img.hover-swap img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: opacity 0.3s ease;
+    }
+
+    .feature-img.hover-swap img.hover {
+      opacity: 0;
+    }
+
+    .feature-img.hover-swap:hover img.hover {
+      opacity: 1;
+    }
+
+    .feature-img.hover-swap:hover img.default {
+      opacity: 0;
+    }
+
     /* ── WIDE IMAGE (per-section override) ── */
     .feature-img.wide {
       display: flex;
@@ -452,8 +479,9 @@
         <p>KeplerMapper network visualization represents clusters of customers based on similar behavioral and usage patterns in the dataset. The red stars mark churn flare clusters, highlighting regions in the customer network where churn rates are significantly higher than average.</p>
         
       </div>
-      <div class="feature-img">
-        <img src="cell2cell_kepler.png" alt="Mapper Graph visualization"/>
+      <div class="feature-img hover-swap">
+        <img class="default" src="cell2cell_kepler.png" alt="Mapper Graph visualization"/>
+        <img class="hover" src="h_kepler.png" alt="Mapper Graph visualization (hover)"/>
         <div class="feature-img-overlay"></div>
         <span class="img-number">03</span>
       </div>
